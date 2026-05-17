@@ -1,0 +1,31 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Função para verificar se o usuário é um admin na coleção de admins
+    function isAdmin() {
+      return request.auth != null && exists(/databases/$(database)/documents/admins/$(request.auth.token.email));
+    }
+
+    // Regras para a coleção de convidados
+    match /groups/{groupId} {
+      // Qualquer um pode ler seu próprio grupo (usando busca por ID ou campo de busca)
+      // Para simplificar o RSVP público, permitimos leitura se souberem o ID
+      allow read: if true; 
+      
+      // Apenas admins podem criar ou deletar grupos
+      allow create, delete: if isAdmin();
+      
+      // Convidados podem atualizar apenas o status de presença e nomes de extras
+      // Admin pode atualizar tudo
+      allow update: if isAdmin() || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['preRegisteredGuests', 'extraGuests']);
+    }
+
+    // Regras para a coleção de administradores (apenas leitura interna ou via console)
+    match /admins/{email} {
+      allow read: if request.auth != null && request.auth.token.email == email;
+      allow write: if false; // Gerenciamento manual via Firebase Console para segurança
+    }
+  }
+}
