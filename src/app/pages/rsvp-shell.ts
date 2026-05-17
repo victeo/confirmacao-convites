@@ -1,4 +1,4 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { RSVPService } from '../services/rsvp.service';
@@ -42,64 +42,77 @@ import { AuthService } from '../services/auth.service';
           </div>
 
           <!-- Search Section -->
-          <div *ngIf="!service.currentGroup() && !submitted()" class="w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <app-search-input (search)="onSearch($event)"></app-search-input>
-            <p *ngIf="service.error()" class="text-error text-center mt-4 font-medium">{{ service.error() }}</p>
-            <div *ngIf="service.loading()" class="flex items-center justify-center mt-4">
-               <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-               <span class="ml-3 text-primary font-medium">Buscando...</span>
+          @if (!service.currentGroup() && !submitted()) {
+            <div class="w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <app-search-input (search)="onSearch($event)"></app-search-input>
+              @if (service.error()) {
+                <p class="text-error text-center mt-4 font-medium">{{ service.error() }}</p>
+              }
+              @if (service.loading()) {
+                <div class="flex items-center justify-center mt-4">
+                  <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  <span class="ml-3 text-primary font-medium">Buscando...</span>
+                </div>
+              }
             </div>
-          </div>
+          }
 
           <!-- Confirmation Section -->
-          <div *ngIf="service.currentGroup() as group" class="w-full animate-in fade-in zoom-in duration-500">
-            <div class="mb-8 text-center">
-              <h3 class="text-2xl font-display text-primary mb-2">Olá, {{ group.titularName || group.preRegisteredGuests[0].name }}!</h3>
-              <p class="text-on-surface-variant">Confirme quem estará presente no evento:</p>
+          @if (service.currentGroup(); as group) {
+            <div class="w-full animate-in fade-in zoom-in duration-500">
+              <div class="mb-8 text-center">
+                <h3 class="text-2xl font-display text-primary mb-2">Olá, {{ group.titularName || group.preRegisteredGuests[0].name }}!</h3>
+                <p class="text-on-surface-variant">Confirme quem estará presente no evento:</p>
+              </div>
+
+              <div class="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                @for (guest of group.preRegisteredGuests; track guest.name; let i = $index) {
+                  <app-guest-item 
+                    [guest]="guest"
+                    (statusChange)="updateGuestStatus('pre', i, $event)">
+                  </app-guest-item>
+                }
+
+                @for (guest of group.extraGuests; track guest.name; let i = $index) {
+                  <app-guest-item 
+                    [guest]="guest"
+                    (statusChange)="updateGuestStatus('extra', i, $event)">
+                  </app-guest-item>
+                }
+              </div>
+
+              @if (remainingExtras() > 0) {
+                <app-extra-guest-form 
+                  [remaining]="remainingExtras()"
+                  (addExtra)="onAddExtra($event)">
+                </app-extra-guest-form>
+              }
+
+              <div class="flex flex-col gap-4 mt-8">
+                <button (click)="submit()" 
+                        class="w-full py-4 bg-gradient-to-r from-primary to-primary-container text-on-primary rounded-xl font-semibold uppercase tracking-widest hover:shadow-lg active:scale-95 transition-all duration-200 disabled:opacity-50"
+                        [disabled]="service.loading()">
+                  {{ service.loading() ? 'Salvando...' : 'Confirmar Presença' }}
+                </button>
+                <button (click)="service.reset()" class="text-outline hover:text-primary transition-colors font-medium">
+                  Voltar à busca
+                </button>
+              </div>
             </div>
-
-            <div class="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-              <app-guest-item 
-                *ngFor="let guest of group.preRegisteredGuests; let i = index"
-                [guest]="guest"
-                (statusChange)="updateGuestStatus('pre', i, $event)">
-              </app-guest-item>
-
-              <app-guest-item 
-                *ngFor="let guest of group.extraGuests; let i = index"
-                [guest]="guest"
-                (statusChange)="updateGuestStatus('extra', i, $event)">
-              </app-guest-item>
-            </div>
-
-            <app-extra-guest-form 
-              *ngIf="remainingExtras() > 0"
-              [remaining]="remainingExtras()"
-              (addExtra)="onAddExtra($event)">
-            </app-extra-guest-form>
-
-            <div class="flex flex-col gap-4 mt-8">
-              <button (click)="submit()" 
-                      class="w-full py-4 bg-gradient-to-r from-primary to-primary-container text-on-primary rounded-xl font-semibold uppercase tracking-widest hover:shadow-lg active:scale-95 transition-all duration-200 disabled:opacity-50"
-                      [disabled]="service.loading()">
-                {{ service.loading() ? 'Salvando...' : 'Confirmar Presença' }}
-              </button>
-              <button (click)="service.reset()" class="text-outline hover:text-primary transition-colors font-medium">
-                Voltar à busca
-              </button>
-            </div>
-          </div>
+          }
 
           <!-- Success Screen -->
-          <div *ngIf="submitted()" class="text-center py-8 animate-in fade-in zoom-in duration-500">
-            <div class="text-6xl mb-6">🎉</div>
-            <h2 class="text-3xl font-display text-primary mb-4">Presença Confirmada!</h2>
-            <p class="text-on-surface-variant text-lg mb-8">Mal podemos esperar para celebrar com você!</p>
-            <button (click)="submitted.set(false); service.reset()" 
-                    class="px-8 py-3 border-2 border-primary text-primary rounded-xl font-semibold hover:bg-primary hover:text-on-primary transition-all">
-              Voltar ao início
-            </button>
-          </div>
+          @if (submitted()) {
+            <div class="text-center py-8 animate-in fade-in zoom-in duration-500">
+              <div class="text-6xl mb-6">🎉</div>
+              <h2 class="text-3xl font-display text-primary mb-4">Presença Confirmada!</h2>
+              <p class="text-on-surface-variant text-lg mb-8">Mal podemos esperar para celebrar com você!</p>
+              <button (click)="submitted.set(false); service.reset()" 
+                      class="px-8 py-3 border-2 border-primary text-primary rounded-xl font-semibold hover:bg-primary hover:text-on-primary transition-all">
+                Voltar ao início
+              </button>
+            </div>
+          }
 
         </div>
       </section>
@@ -110,7 +123,8 @@ import { AuthService } from '../services/auth.service';
     .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #d7c1c3; border-radius: 10px; }
     .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #8a4853; }
-  `]
+  `],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RSVPShellComponent implements OnInit {
   service = inject(RSVPService);
