@@ -1,4 +1,4 @@
-import { Component, output } from '@angular/core';
+import { Component, output, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 @Component({
@@ -29,7 +29,8 @@ import { FormsModule } from '@angular/forms';
         <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
       </button>
     </div>
-  `
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SearchInputComponent {
   searchTerm = '';

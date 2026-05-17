@@ -1,4 +1,4 @@
-import { Component, input, output } from '@angular/core';
+import { Component, input, output, ChangeDetectionStrategy } from '@angular/core';
 import { Guest, RSVPStatus } from '../models/rsvp.model';
 import { CommonModule } from '@angular/common';
 
@@ -35,7 +35,8 @@ import { CommonModule } from '@angular/common';
         </button>
       </div>
     </div>
-  `
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class GuestItemComponent {
   guest = input.required<Guest>();
