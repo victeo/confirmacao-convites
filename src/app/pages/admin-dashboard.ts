@@ -11,7 +11,8 @@ import {
   deleteDoc,
   doc
 } from '@angular/fire/firestore';
-import { RSVPGroup, GuestType, RSVPStatus } from '../models/rsvp.model';
+import { RSVPGroup, GuestType, RSVPStatus, EventConfig } from '../models/rsvp.model';
+import { RSVPService } from '../services/rsvp.service';
 
 type FilterStatus = 'ALL' | RSVPStatus;
 
@@ -26,13 +27,54 @@ type FilterStatus = 'ALL' | RSVPStatus;
       <nav class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-12 pb-6 border-b border-outline-variant/30">
         <div>
           <h1 class="font-display text-4xl text-primary font-bold">Painel Administrativo</h1>
-          <p class="text-on-surface-variant">Gerencie a lista de convidados e acompanhantes.</p>
+          <p class="text-on-surface-variant">Gerencie o evento e a lista de convidados.</p>
         </div>
-        <div class="flex items-center gap-4 bg-surface-container p-3 rounded-2xl border border-outline-variant/20 shadow-sm">
-          <span class="text-sm font-medium text-on-surface">{{ (auth.user$ | async)?.email }}</span>
-          <button (click)="auth.logout()" class="px-4 py-2 bg-error text-on-error rounded-xl text-sm font-bold active:scale-95 transition-all">Sair</button>
+        <div class="flex items-center gap-4">
+          <button (click)="showSettings.set(!showSettings())" 
+                  class="px-6 py-3 rounded-xl font-bold transition-all border border-primary/20"
+                  [class.bg-primary]="showSettings()"
+                  [class.text-on-primary]="showSettings()"
+                  [class.text-primary]="!showSettings()">
+            ⚙️ Configurações do Evento
+          </button>
+          <div class="flex items-center gap-4 bg-surface-container p-3 rounded-2xl border border-outline-variant/20 shadow-sm">
+            <span class="text-sm font-medium text-on-surface">{{ (auth.user$ | async)?.email }}</span>
+            <button (click)="auth.logout()" class="px-4 py-2 bg-error text-on-error rounded-xl text-sm font-bold active:scale-95 transition-all">Sair</button>
+          </div>
         </div>
       </nav>
+
+      <!-- Event Settings Section -->
+      @if (showSettings()) {
+        <section class="mb-12 animate-in slide-in-from-top-4 duration-500">
+          <div class="bg-white p-8 rounded-3xl border border-primary/20 shadow-xl">
+            <h2 class="font-display text-2xl text-primary font-bold mb-8">Localização do Evento</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div class="flex flex-col gap-2">
+                <label class="text-sm font-bold text-on-surface-variant uppercase tracking-tight">Nome do Local *</label>
+                <input type="text" [(ngModel)]="eventConfig.locationName" placeholder="Ex: Mansão das Flores" class="w-full p-4 bg-surface-container border border-outline-variant/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary transition-all">
+              </div>
+              <div class="flex flex-col gap-2">
+                <label class="text-sm font-bold text-on-surface-variant uppercase tracking-tight">Add Endereço *</label>
+                <input type="text" [(ngModel)]="eventConfig.address" placeholder="Rua Exemplo, 123 - Bairro" class="w-full p-4 bg-surface-container border border-outline-variant/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary transition-all">
+              </div>
+              <div class="flex flex-col gap-2">
+                <label class="text-sm font-bold text-on-surface-variant uppercase tracking-tight">Link do Google Maps *</label>
+                <input type="text" [(ngModel)]="eventConfig.googleMapsLink" placeholder="https://goo.gl/maps/..." class="w-full p-4 bg-surface-container border border-outline-variant/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary transition-all">
+              </div>
+              <div class="flex flex-col gap-2">
+                <label class="text-sm font-bold text-on-surface-variant uppercase tracking-tight">Informações Adicionais (Opcional)</label>
+                <input type="text" [(ngModel)]="eventConfig.additionalInfo" placeholder="Ex: Entrada pelo portão lateral" class="w-full p-4 bg-surface-container border border-outline-variant/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary transition-all">
+              </div>
+            </div>
+            <div class="flex justify-end mt-8">
+              <button (click)="saveSettings()" class="px-12 py-4 bg-primary text-on-primary font-bold rounded-xl active:scale-95 transition-all shadow-lg" [disabled]="loadingSettings()">
+                {{ loadingSettings() ? 'Salvando...' : 'Salvar Configurações' }}
+              </button>
+            </div>
+          </div>
+        </section>
+      }
 
       <!-- Stats -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
@@ -174,8 +216,12 @@ type FilterStatus = 'ALL' | RSVPStatus;
                   </td>
                   <td class="p-6">
                     <div class="flex gap-2">
-                      <button (click)="editGroup(group)" class="w-10 h-10 rounded-lg flex items-center justify-center border border-outline-variant/50 hover:bg-surface-container transition-colors" title="Editar">✏️</button>
-                      <button (click)="deleteGroup(group.id)" class="w-10 h-10 rounded-lg flex items-center justify-center border border-error/30 text-error hover:bg-error/5 transition-colors" title="Excluir">🗑️</button>
+                      <button type="button" (click)="copyLink(group)" class="w-10 h-10 rounded-lg flex items-center justify-center border border-primary/30 text-primary hover:bg-primary/5 transition-colors" title="Copiar Link de Convite">🔗</button>
+                      <button type="button" (click)="shareWhatsApp(group)" class="w-10 h-10 rounded-lg flex items-center justify-center border border-green-600/30 text-green-600 hover:bg-green-600/5 transition-colors" title="Enviar via WhatsApp">
+                        <svg viewBox="0 0 24 24" class="w-5 h-5 fill-current" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.72.937 3.659 1.432 5.631 1.433h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                      </button>
+                      <button type="button" (click)="editGroup(group)" class="w-10 h-10 rounded-lg flex items-center justify-center border border-outline-variant/50 hover:bg-surface-container transition-colors" title="Editar">✏️</button>
+                      <button type="button" (click)="deleteGroup(group.id)" class="w-10 h-10 rounded-lg flex items-center justify-center border border-error/30 text-error hover:bg-error/5 transition-colors" title="Excluir">🗑️</button>
                     </div>
                   </td>
                 </tr>
@@ -202,6 +248,7 @@ type FilterStatus = 'ALL' | RSVPStatus;
 export class AdminDashboardComponent implements OnDestroy {
   public auth = inject(AuthService);
   private firestore = inject(Firestore);
+  private rsvpService = inject(RSVPService);
 
   groups = signal<RSVPGroup[]>([]);
   currentFilter = signal<FilterStatus>('ALL');
@@ -209,8 +256,17 @@ export class AdminDashboardComponent implements OnDestroy {
   protected readonly RSVPStatus = RSVPStatus;
 
   showAddForm = signal(false);
+  showSettings = signal(false);
   loading = signal(false);
+  loadingSettings = signal(false);
   editingId = signal<string | null>(null);
+
+  eventConfig: EventConfig = {
+    locationName: '',
+    address: '',
+    googleMapsLink: '',
+    additionalInfo: ''
+  };
 
   newGroup = { titularName: '', phone: '', maxExtras: 0 };
   newDependentName = '';
@@ -244,6 +300,35 @@ export class AdminDashboardComponent implements OnDestroy {
     this.unsubscribe = onSnapshot(groupsRef, (snapshot) => {
       this.groups.set(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as RSVPGroup[]);
     });
+
+    // Carregar configurações iniciais
+    this.loadEventConfig();
+  }
+
+  async loadEventConfig() {
+    await this.rsvpService.getEventConfig();
+    const config = this.rsvpService.eventConfig();
+    if (config) {
+      this.eventConfig = { ...config };
+    }
+  }
+
+  async saveSettings() {
+    if (!this.eventConfig.locationName || !this.eventConfig.address || !this.eventConfig.googleMapsLink) {
+      alert('Por favor, preencha todos os campos obrigatórios (*)');
+      return;
+    }
+
+    this.loadingSettings.set(true);
+    try {
+      await this.rsvpService.saveEventConfig(this.eventConfig);
+      alert('Configurações salvas com sucesso!');
+      this.showSettings.set(false);
+    } catch (e) {
+      alert('Erro ao salvar configurações.');
+    } finally {
+      this.loadingSettings.set(false);
+    }
   }
 
   ngOnDestroy() { if (this.unsubscribe) this.unsubscribe(); }
@@ -301,15 +386,16 @@ export class AdminDashboardComponent implements OnDestroy {
   }
 
   async saveGroup() {
-    if (!this.newGroup.titularName) return;
+    const titularName = this.newGroup.titularName.trim();
+    if (!titularName) return;
     this.loading.set(true);
     try {
-      const dependents = this.dependentsList().map(name => ({ name, type: GuestType.DEPENDENT, status: RSVPStatus.PENDING }));
+      const dependents = this.dependentsList().map(name => ({ name: name.trim(), type: GuestType.DEPENDENT, status: RSVPStatus.PENDING }));
       const groupData: any = {
-        titularName: this.newGroup.titularName,
+        titularName,
         phone: this.newGroup.phone,
         maxExtras: this.newGroup.maxExtras,
-        preRegisteredGuests: [{ name: this.newGroup.titularName, type: GuestType.TITULAR, status: RSVPStatus.PENDING }, ...dependents]
+        preRegisteredGuests: [{ name: titularName, type: GuestType.TITULAR, status: RSVPStatus.PENDING }, ...dependents]
       };
 
       if (this.editingId()) {
@@ -331,5 +417,34 @@ export class AdminDashboardComponent implements OnDestroy {
   async deleteGroup(id: string | undefined) {
     if (!id || !confirm('Tem certeza que deseja excluir este convite?')) return;
     try { await deleteDoc(doc(this.firestore, `groups/${id}`)); } catch (e) {}
+  }
+
+  async copyLink(group: RSVPGroup) {
+    const name = (group.titularName || group.preRegisteredGuests[0]?.name || '').replace(/ /g, '_');
+    const url = `${window.location.origin}/convidado/${name}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      alert('Link do convite copiado!');
+    } catch (err) {
+      console.error('Erro ao copiar link:', err);
+      alert('Não foi possível copiar o link automaticamente.');
+    }
+  }
+
+  shareWhatsApp(group: RSVPGroup) {
+    const name = group.titularName || group.preRegisteredGuests[0]?.name || '';
+    const linkName = name.replace(/ /g, '_');
+    const url = `${window.location.origin}/convidado/${linkName}`;
+    const phone = (group.phone || '').replace(/\D/g, '');
+    
+    const message = `Olá ${name}! Ficaremos muito felizes com sua presença em nosso evento. Por favor, confirme sua participação através deste link: ${url}`;
+    const encodedMessage = encodeURIComponent(message);
+    
+    if (phone) {
+      window.open(`https://wa.me/55${phone}?text=${encodedMessage}`, '_blank');
+    } else {
+      // Se não tiver telefone, apenas abre o WhatsApp Web para escolher o contato
+      window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
+    }
   }
 }

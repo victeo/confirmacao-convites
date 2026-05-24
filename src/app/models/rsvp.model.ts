@@ -10,6 +10,14 @@ export enum GuestType {
   EXTRA = 'EXTRA'
 }
 
+export interface EventConfig {
+  id?: string;
+  locationName: string;
+  address: string;
+  googleMapsLink: string;
+  additionalInfo?: string;
+}
+
 export interface Guest {
   id?: string;
   name: string;

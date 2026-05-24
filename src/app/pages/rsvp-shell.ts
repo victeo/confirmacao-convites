@@ -103,10 +103,21 @@ import { AuthService } from '../services/auth.service';
 
           <!-- Success Screen -->
           @if (submitted()) {
-            <div class="text-center py-8 animate-in fade-in zoom-in duration-500">
+            <div class="text-center py-8 animate-in fade-in zoom-in duration-500 w-full">
               <div class="text-6xl mb-6">🎉</div>
               <h2 class="text-3xl font-display text-primary mb-4">Presença Confirmada!</h2>
               <p class="text-on-surface-variant text-lg mb-8">Mal podemos esperar para celebrar com você!</p>
+              
+              @if (service.eventConfig(); as config) {
+                <div class="mb-8">
+                  <button (click)="service.showLocationModal.set(true)" 
+                          class="text-primary font-bold hover:underline flex items-center justify-center gap-2 mx-auto">
+                    <span class="material-symbols-outlined">location_on</span>
+                    Ver informações do local
+                  </button>
+                </div>
+              }
+
               <button (click)="submitted.set(false); service.reset()" 
                       class="px-8 py-3 border-2 border-primary text-primary rounded-xl font-semibold hover:bg-primary hover:text-on-primary transition-all">
                 Voltar ao início
@@ -158,10 +169,35 @@ export class RSVPShellComponent implements OnInit {
   });
 
   ngOnInit() {
-    const id = this.route.snapshot.queryParamMap.get('c');
-    if (id) {
-      this.service.getGroupById(id);
-    }
+    // Carregar configurações do evento (local, endereço, etc)
+    this.service.getEventConfig();
+
+    // Escuta tanto parâmetros de rota quanto de busca para reagir a mudanças
+    this.route.paramMap.subscribe(params => {
+      const nameParam = params.get('name');
+      if (nameParam) {
+        this.loadByName(nameParam);
+      }
+    });
+
+    this.route.queryParamMap.subscribe(params => {
+      const id = params.get('c');
+      if (id) {
+        this.service.getGroupById(id);
+        return;
+      }
+
+      const convidadoParam = params.get('convidado');
+      if (convidadoParam) {
+        this.loadByName(convidadoParam);
+      }
+    });
+  }
+
+  private loadByName(name: string) {
+    // Remove aspas se o usuário tiver incluído no link (ex: convidado="Nome")
+    const cleanName = name.replace(/^["']|["']$/g, '').replace(/_/g, ' ');
+    this.service.searchGroup(cleanName);
   }
 
   onSearch(term: string) {

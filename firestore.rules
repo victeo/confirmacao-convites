@@ -27,5 +27,13 @@ service cloud.firestore {
       allow read: if request.auth != null && request.auth.token.email == email;
       allow write: if false; // Gerenciamento manual via Firebase Console para segurança
     }
+
+    // Regras para a coleção de configurações do evento
+    match /config/{document=**} {
+      // Qualquer um pode ler as configurações do local
+      allow read: if true;
+      // Apenas admins podem alterar as configurações
+      allow write: if isAdmin();
+    }
   }
 }
