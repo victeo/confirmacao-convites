@@ -10,7 +10,7 @@ import {
   updateDoc,
   or
 } from '@angular/fire/firestore';
-import { RSVPGroup, RSVPStatus, Guest, GuestType } from '../models/rsvp.model';
+import { RSVPGroup, RSVPStatus, Guest, GuestType, EventConfig } from '../models/rsvp.model';
 
 @Injectable({
   providedIn: 'root'
@@ -18,10 +18,51 @@ import { RSVPGroup, RSVPStatus, Guest, GuestType } from '../models/rsvp.model';
 export class RSVPService {
   private firestore = inject(Firestore);
   
-  // Estado reativo do grupo atual
+  // Estado reativo
   currentGroup = signal<RSVPGroup | null>(null);
+  eventConfig = signal<EventConfig | null>(null);
+  showLocationModal = signal<boolean>(false);
   loading = signal<boolean>(false);
   error = signal<string | null>(null);
+
+  /**
+   * Busca as configurações do evento
+   */
+  async getEventConfig(): Promise<void> {
+    try {
+      const docRef = doc(this.firestore, 'config/event');
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        this.eventConfig.set(docSnap.data() as EventConfig);
+      }
+    } catch (e) {
+      console.error('Erro ao carregar configurações:', e);
+    }
+  }
+
+  /**
+   * Salva as configurações do evento
+   */
+  async saveEventConfig(config: EventConfig): Promise<void> {
+    this.loading.set(true);
+    try {
+      const docRef = doc(this.firestore, 'config/event');
+      await updateDoc(docRef, { ...config });
+      this.eventConfig.set(config);
+    } catch (e) {
+      // Se o documento não existir, updateDoc falha. Tentamos criar.
+      try {
+        const { setDoc } = await import('@angular/fire/firestore');
+        await setDoc(doc(this.firestore, 'config/event'), config);
+        this.eventConfig.set(config);
+      } catch (err) {
+        this.error.set('Erro ao salvar configurações do evento.');
+        throw err;
+      }
+    } finally {
+      this.loading.set(false);
+    }
+  }
 
   /**
    * Busca um grupo pelo ID único (Link Direto)

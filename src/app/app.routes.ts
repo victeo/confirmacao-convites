@@ -5,6 +5,7 @@ import { adminGuard } from './guards/admin.guard';
 
 export const routes: Routes = [
   { path: '', component: RSVPShellComponent },
+  { path: 'convidado/:name', component: RSVPShellComponent },
   { path: 'admin', component: AdminDashboardComponent, canActivate: [adminGuard] },
   { path: '**', redirectTo: '' }
 ];
