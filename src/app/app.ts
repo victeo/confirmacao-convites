@@ -14,7 +14,7 @@ import { RSVPService } from './services/rsvp.service';
       <button (click)="showDrawer.set(true)" aria-label="Menu" class="text-on-surface-variant hover:text-primary transition-colors duration-300 active:scale-95 flex items-center justify-center p-2 rounded-full">
         <span class="material-symbols-outlined text-[24px]">menu</span>
       </button>
-      <h1 class="font-display text-xl md:text-2xl text-primary tracking-tight font-semibold">15 Anos da Evento</h1>
+      <h1 class="font-display text-xl md:text-2xl text-primary tracking-tight font-semibold">Confirmação de Presença</h1>
       <div class="w-10"></div> 
     </header>
 
@@ -53,7 +53,7 @@ import { RSVPService } from './services/rsvp.service';
           </nav>
 
           <div class="p-6 border-t border-outline-variant/30 text-center">
-            <p class="text-xs text-outline italic">Evento 15 Anos • 2026</p>
+            <p class="text-xs text-outline italic">Confirmação de Presença</p>
           </div>
         </aside>
       </div>
@@ -66,7 +66,7 @@ import { RSVPService } from './services/rsvp.service';
 
     <!-- Footer -->
     <footer class="w-full bg-surface-container-low flex flex-col items-center gap-6 py-12 px-6 text-center pb-32 md:pb-12">
-      <h3 class="font-display text-2xl text-primary">Com carinho, Evento • 2026</h3>
+      <h3 class="font-display text-2xl text-primary">Com carinho, esperamos você!</h3>
       <nav class="flex flex-wrap justify-center gap-6">
         <a (click)="openLocation()" class="text-on-surface-variant hover:text-primary transition-all duration-300 opacity-80 hover:opacity-100 cursor-pointer">Localização</a>
         <a class="text-on-surface-variant hover:text-primary transition-all duration-300 opacity-80 hover:opacity-100 cursor-pointer">Traje</a>

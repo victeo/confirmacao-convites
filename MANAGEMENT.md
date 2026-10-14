@@ -1,4 +1,4 @@
-# Gerenciamento de Administradores - RSVP Evento
+# Gerenciamento de Administradores - RSVP de Eventos
 
 Este documento descreve como gerenciar quem tem acesso administrativo ao sistema de RSVP.
 

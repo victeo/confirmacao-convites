@@ -1,6 +1,6 @@
-# 15 Anos da Evento - Sistema de RSVP
+# Confirmação de Convites - Sistema de RSVP
 
-Este projeto é uma aplicação web moderna e elegante desenvolvida em **Angular 21** para gerenciar a confirmação de presença (RSVP) do aniversário de 15 anos da Evento. O foco é proporcionar uma experiência de usuário premium para os convidados e um controle gerencial robusto para os organizadores.
+Este projeto é uma aplicação web moderna e elegante desenvolvida em **Angular 21** para gerenciar a confirmação de presença (RSVP) deventos. O foco é proporcionar uma experiência de usuário premium para os convidados e um controle gerencial robusto para os organizadores.
 
 ---
 
@@ -44,12 +44,12 @@ O sistema centraliza o recebimento de confirmações de presença, permitindo qu
 ### 2. Instalação
 ```bash
 git clone [url-do-repositorio]
-cd victoria
+cd confirmacao-convites
 npm install --legacy-peer-deps
 ```
 
 ### 3. Configuração do Firebase
-O projeto utiliza as credenciais localizadas em `src/environments/environment.ts`. Certifique-se de configurar o seu projeto no Firebase Console e habilitar:
+Copie `src/environments/environment.example.ts` para `src/environments/environment.ts` e `src/environments/environment.prod.ts` (ambos ignorados pelo git) e preencha com as credenciais do seu projeto. Nunca faça commit desses arquivos. Certifique-se de configurar o seu projeto no Firebase Console e habilitar:
 - **Firestore Database:** Em modo nativo.
 - **Authentication:** Provedor Google ativado.
 
